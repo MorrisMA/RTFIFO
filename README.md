@@ -1,4 +1,4 @@
-M65C02 Microprocessor Core
+Microprogrammed Rx/Tx Block RAM FIFO
 =======================
 
 Copyright (C) 2012, Michael A. Morris <morrisma@mchsi.com>.
