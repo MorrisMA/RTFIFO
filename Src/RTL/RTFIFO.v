@@ -96,32 +96,35 @@
 
 module RTFIFO #(
     parameter pRTFIFO_Bits = 8,                 // Number address bits
-    parameter pRTFIFO_uPgm = "RTFIFO_uPgm.coe", // FIFO Controller Microprogram
-    parameter pRTFIFO_Init = "RTFIFO_Init.coe", // FIFO Register Initialization
-    parameter pRTFIFO_BRAM = "RTFIFO_BRAM.coe", // FIFO BRAM Initialization
+    // FIFO Controller Microprogram
+    parameter pRTFIFO_uPgm = "Src/Microprogram-Sources/RTFIFO_uPgm.coe",
+    // FIFO Register Initialization    
+    parameter pRTFIFO_Init = "Src/Microprogram-Sources/RTFIFO_Init.coe",
+    // FIFO BRAM Initialization
+    parameter pRTFIFO_BRAM = "Src/Microprogram-Sources/RTFIFO_BRAM.coe", 
     parameter pTF_EF_Init  = 1'b1,              // TF Empty Flag Initial State
     parameter pRF_EF_Init  = 1'b1               // RF Empty Flag Initial State
 )(
     input   Clk,            // System Clock
     input   Rst,            // System Reset
     
-    input   TF_Rst,         // Falling-edge latch of transmit FIFO reset signal
+    input   TF_Rst,         // Falling-edge latch of Tx FIFO reset signal
 
-    input   TF_Rd,          // Transmit FIFO read pulse, asserted by TxSR Load
-    input   TF_Wr,          // Transmit FIFO write pulse, asserted by uP interface
-    output  TF_EF,          // Transmit FIFO Empty Flag
-    output  TF_FF,          // Transmit FIFO Full Flag
-    input   [7:0] TDI,      // Transmit FIFO Data In  => from uP bus
-    output  reg [7:0] TDO,  // Transmit FIFO Data Out => to transmit SR
+    input   TF_Rd,          // Tx FIFO read pulse, asserted by TxSR Load
+    input   TF_Wr,          // Tx FIFO write pulse, asserted by uP IF
+    output  TF_EF,          // Tx FIFO Empty Flag
+    output  TF_FF,          // Tx FIFO Full Flag
+    input   [7:0] TDI,      // Tx FIFO Data In  => from uP bus
+    output  reg [7:0] TDO,  // Tx FIFO Data Out => to transmit SR
     
-    input   RF_Rst,         // Falling-edge latch of receive FIFO reset signal
+    input   RF_Rst,         // Falling-edge latch of Rx FIFO reset signal
     
-    input   RF_Rd,          // Receive FIFO read pulse, asserted by uP interface
-    input   RF_Wr,          // Receive FIFO write pulse, asserted by RxSR DataRdy
-    output  RF_EF,          // Receive FIFO Empty Flag
-    output  RF_FF,          // Receive FIFO Full Flag
-    input   [7:0] RDI,      // Receive FIFO Data In  => from receive SR
-    output  reg [7:0] RDO   // Receive FIFO Data Out => to uP bus
+    input   RF_Rd,          // Rx FIFO read pulse, asserted by uP interface
+    input   RF_Wr,          // Rx FIFO write pulse, asserted by RxSR DataRdy
+    output  RF_EF,          // Rx FIFO Empty Flag
+    output  RF_FF,          // Rx FIFO Full Flag
+    input   [7:0] RDI,      // Rx FIFO Data In  => from receive SR
+    output  reg [7:0] RDO   // Rx FIFO Data Out => to uP bus
 );
 
 ////////////////////////////////////////////////////////////////////////////////
