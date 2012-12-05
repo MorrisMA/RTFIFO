@@ -398,16 +398,16 @@ begin
               (WR_RF & RF_EF),          // Write Receive FIFO  when  EF
               WR_RF           })        // Write Receive FIFO  when ~EF & ~FF
             //
-            9'b0xx_xx_xx_xx : {FS, CS} <= {  FS, NS    }; // Next State uPgm ROM
-            9'b11x_xx_xx_xx : {FS, CS} <= {1'b1, pReset}; // Reset TF
-            9'b101_xx_xx_xx : {FS, CS} <= {1'b0, pReset}; // Reset RF
-            9'b100_1x_xx_xx : {FS, CS} <= {1'b1, pWr_EF}; // Write to Empty TF
-            9'b100_01_xx_xx : {FS, CS} <= {1'b1, pWr   }; // Write to TF
-            9'b100_00_1x_xx : {FS, CS} <= {1'b0, pRd   }; // Read from RF
-            9'b100_00_01_xx : {FS, CS} <= {1'b1, pRd   }; // Read from TF
-            9'b100_00_00_1x : {FS, CS} <= {1'b0, pWr_EF}; // Write to Empty RF
-            9'b100_00_00_01 : {FS, CS} <= {1'b0, pWr   }; // Write to RF
-            9'b100_00_00_00 : {FS, CS} <= {  FS, pIdle }; // Stay in Idle
+            9'b0xx_xx_xx_xx : {FS, CS} <= #1 {  FS, NS    }; // NS from uPgm ROM
+            9'b11x_xx_xx_xx : {FS, CS} <= #1 {1'b1, pReset}; // Reset TF
+            9'b101_xx_xx_xx : {FS, CS} <= #1 {1'b0, pReset}; // Reset RF
+            9'b100_1x_xx_xx : {FS, CS} <= #1 {1'b1, pWr_EF}; // Write Empty TF
+            9'b100_01_xx_xx : {FS, CS} <= #1 {1'b1, pWr   }; // Write TF
+            9'b100_00_1x_xx : {FS, CS} <= #1 {1'b0, pRd   }; // Read RF
+            9'b100_00_01_xx : {FS, CS} <= #1 {1'b1, pRd   }; // Read TF
+            9'b100_00_00_1x : {FS, CS} <= #1 {1'b0, pWr_EF}; // Write Empty RF
+            9'b100_00_00_01 : {FS, CS} <= #1 {1'b0, pWr   }; // Write RF
+            9'b100_00_00_00 : {FS, CS} <= #1 {  FS, pIdle }; // Stay in Idle
         endcase
 end
 

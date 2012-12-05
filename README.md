@@ -40,20 +40,20 @@ Synthesis
 The objective for the core is to synthesize such that the FF-FF speed is 100 MHz
 or higher in a Xilinx XC2S150-6PQ208 FPGA using Xilinx ISE 10.1i SP3. In that
 regard, the core provided meets and exceeds that objective. Using the settings
-provided in the RTFIFO.tcl file, ISE 10.1i tool implements the design and
-reports that the 9.796 ns period (102 MHz) constraint is satisfied.
+provided in the RTFIFO.tcl file, the ISE 10.1i tool implements the design and
+reports that the 9.761 ns period (102 MHz) constraint is satisfied.
 
 The ISE 10.1i SP3 implementation results are as follows:
 
     Number of Slice FFs:            24
-    Number of 4-input LUTs:         96
+    Number of 4-input LUTs:         96  (14 used for uPgm ROM)
     Number of Occupied Slices:      65
     Total Number of 4-input LUTs:   104 (8 used as single port LUT-based RAM)
 
     Number of BUFGMUXs:             1
-    Number of RAMB16BWEs            1   (RTFIFO_BRAM.coe)
+    Number of BlockRAMs             1   (RTFIFO_BRAM.coe)
 
-    Best Case Achievable:           9.796 ns ()
+    Best Case Achievable:           9.761 ns (0.239 ns SETUP; 2.027 ns HOLD )
 
 Status
 ------
