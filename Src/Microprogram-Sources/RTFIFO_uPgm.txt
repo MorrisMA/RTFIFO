@@ -57,8 +57,8 @@ endh
 
 Clr_WCntr   .asm    0       -- Clear Word Counter Location                  (A)
 Clr_Spr     .asm    1       -- Clear Spare RAM Location                     (B)
-Clr_WPtr    .asm    2       -- Clear Write Pointer Location                 (C)
-Clr_RPtr    .asm    3       -- Clear Read Pointer Location                  (D)
+Clr_RPtr    .asm    2       -- Clear Read  Pointer Location                 (C)
+Clr_WPtr    .asm    3       -- Clear Write Pointer Location                 (D)
 --
 FWr         .asm    4       -- Write FIFO - Increment WPtr, Write BRAM      (E)
 FWr_1       .asm    5       -- Write FIFO - Increment RCntr, Update Flags   (F)
@@ -131,8 +131,8 @@ Set_xFF     .equ    3       -- SF <= Update FIFO Full Flag  (FIFO Write)
 _Start: .org    0
 
     Clr_Spr     WCntr, Clr                              -- 0001_00_01_00_00_00
-    Clr_WPtr    Spare, Clr                              -- 0010_01_01_00_00_00
-    Clr_RPtr    RPtr,  Clr,   , Clr_xRF  , Init_xFlgs   -- 0011_10_01_00_01_01
+    Clr_RPtr    Spare, Clr                              -- 0010_01_01_00_00_00
+    Clr_WPtr    RPtr,  Clr,   , Clr_xRF  , Init_xFlgs   -- 0011_10_01_00_01_01
     Idle        WPtr,  Clr                              -- 1000_11_01_00_00_00
 --
 

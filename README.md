@@ -11,9 +11,10 @@ This project provides a microprogrammed implementation of dual
 receive/transmit FIFO which uses Block RAM for the storage element. The 
 present implementation is based on a Foundation 2.1i SP6 macro designed and 
 implemented 8 years ago. That design and implementation has been successfully 
-employed in several projects as the FIFO component of 16C550-compatible UARTs. 
-This project is an effort to reimplement that implementation in Verilog HDL like 
-the UARTs.
+employed in several projects as the FIFO component of 16C550-compatible UARTs.
+ 
+This project is an effort to reimplement that Rx/Tx FIFO implementation in 
+Verilog HDL like the UARTs.
 
 Implementation
 --------------
@@ -46,14 +47,14 @@ reports that the 9.761 ns period (102 MHz) constraint is satisfied.
 The ISE 10.1i SP3 implementation results are as follows:
 
     Number of Slice FFs:            24
-    Number of 4-input LUTs:         96  (14 used for uPgm ROM)
-    Number of Occupied Slices:      65
-    Total Number of 4-input LUTs:   104 (8 used as single port LUT-based RAM)
+    Number of 4-input LUTs:         97  (14 : LUT-based uPgm ROM)
+    Number of Occupied Slices:      66
+    Total Number of 4-input LUTs:   105 ( 8 : SP LUT-based RAM  )
 
     Number of BUFGMUXs:             1
     Number of BlockRAMs             1   (RTFIFO_BRAM.coe)
 
-    Best Case Achievable:           9.761 ns (0.239 ns SETUP; 2.027 ns HOLD )
+    Best Case Achievable:           9.704 ns (0.296 ns SETUP; 2.060 ns HOLD )
 
 Status
 ------
@@ -63,3 +64,73 @@ underway.
 
 Release Notes
 -------------
+
+In addition to providing an example of a microprogrammed Rx/Tx FIFO 
+controller, the repository includes an example of a non-microprogrammed, 
+standard controller for a Rx/Tx FIFO. The example of a standard controller 
+demonstrates how resource effecient a microprogrammed Rx/Tx FIFO controller can
+be in a RAM-based FPGA.
+
+The standard Rx/Tx FIFO controller provided is not a contrived example. With 
+the the exception that it uses the same number of registers as the 
+microprogrammed implementation, the standard state machine approach uses an 
+RTL implementation for the registers (word counter, read pointer, and write 
+pointer) and for the state machine. Although specific encoding of the states 
+of the controller have been used, the synthesizer has not been constrained in 
+any manner. Thus, after analysis of the RTL implementation, the synthesizer 
+has opted to convert the sequential state assignments provided in the code 
+into a one-hot implementation of the state machine. Furthermore, two of the 
+encoded control fields have also been synthesized as one-hot fields.
+
+These two optimizations, automatically applied by the synthesizer, will result 
+in state transition and control logic equations which are more efficient than 
+a similar implementation which uses encoded states and control fields. Thus, 
+no special effort was expended to keep the synthesizer from optimizing the
+standard state machine implementation as much as possible.
+
+The following table summarizes the resource utilization for the optimized, 
+standard state machine approach:
+
+The ISE 10.1i SP3 implementation results are as follows:
+
+    Number of Slice FFs:            105
+    Number of 4-input LUTs:         178
+    Number of Occupied Slices:      146
+    Total Number of 4-input LUTs:   179 (1 used for route-through)
+
+    Number of BUFGMUXs:             1
+    Number of BlockRAMs             1   (RTFIFO_BRAM.coe)
+
+    Best Case Achievable:           11.316 ns (N/A ns SETUP; 2.939 ns HOLD)
+
+Comparing the two results shows that the microprogrammed implementation has 
+some distinct advantages over the RTL-only approach. It is possible to take 
+advantage of some of the benefits of the microprogrammed state machine 
+approach without resorting to a micrprogrammed state machine. For example, it 
+is possible to use a LUT-based, distributed RAM to implement the the 
+registers. This optimization alone will reduce the number of registers/FFs 
+from 105 to approximately 57. It will not, however, come close to matching the 
+better than 4:1 reduction in registers that the microprogrammed approach 
+provides. Neither will it achieve the better than 2:1 in the number of 
+occupied slices that the microprogrammed approach achieves.
+
+The microprogrammed Rx/Tx FIFO provided in this repo is a design approach that 
+should be carefully considered when using RAM-based FPGAs. In many 
+situtations, a standard, RTL-based approach fails to take full advantage of the 
+features of RAM-based FPGAs, and will result in inefficient use of the FPGA. 
+Given the cost of implementing any design in an FPGA and the cost of the 
+device itself, designers should seek to maximize the amount of circuitry/logic 
+that can be incorporated into an FPGA. In many cases, a microprogrammed 
+approach will result in a faster, more resource efficient implementation. This 
+alone may be sufficient to reduce the size of the device shipped in a product, 
+or it may allow an existing product to include additional features prior to or 
+after shipment. 
+
+As a final comment. Given the dual port nature of most FPGA block RAMs, or the 
+ease with with a dual-port capability can be incorporated into distributed, 
+LUT-based RAM, it is possible to incorporate some form of writable control 
+store in virtually any microprogrammed state machine implementation. With some 
+forethought and planning, FPGAs incorporating complex state machines can 
+easily be configured to be in-circuit re-writable. The potential flexibility 
+that a writable microprogram control store provides can not be easily 
+quantified. In other words, it is potentially "priceless".
