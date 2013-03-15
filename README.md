@@ -24,7 +24,7 @@ and several memory initialization files:
 
     RTFIFO.v                - Top level module
     
-    RTFIFO_uPgm.coe         - RTFIFO Microprogram
+    RTFIFO_uPgm.coe         - RTFIFO Microprogram ROM Memory Configuration File
     RTFIFO_Init.coe         - RTFIFO FIFO Control Register (LUT) Initialization
     RTFIFO_BRAM.coe         - RTFIFO Block RAM Initialization
 
@@ -33,7 +33,7 @@ and several memory initialization files:
     
     tb_RTFIFO.v             - Completed core testbench with test RAM (under development)
     
-    RTFIFO_uPgm.txt         - Memory configuration file of M65C02 test program
+    RTFIFO_uPgm.txt         - Microprogram Source File
 
 Synthesis
 ---------
@@ -76,7 +76,7 @@ the the exception that it uses the same number of registers as the
 microprogrammed implementation, the standard state machine approach uses an 
 RTL implementation for the registers (word counter, read pointer, and write 
 pointer) and for the state machine. Although specific encoding of the states 
-of the controller have been used, the synthesizer has not been constrained in 
+of the controller has been used, the synthesizer has not been constrained in 
 any manner. Thus, after analysis of the RTL implementation, the synthesizer 
 has opted to convert the sequential state assignments provided in the code 
 into a one-hot implementation of the state machine. Furthermore, two of the 
@@ -106,7 +106,7 @@ The ISE 10.1i SP3 implementation results are as follows:
 Comparing the two results shows that the microprogrammed implementation has 
 some distinct advantages over the RTL-only approach. It is possible to take 
 advantage of some of the benefits of the microprogrammed state machine 
-approach without resorting to a micrprogrammed state machine. For example, it 
+approach without resorting to a microprogrammed state machine. For example, it 
 is possible to use a LUT-based, distributed RAM to implement the the 
 registers. This optimization alone will reduce the number of registers/FFs 
 from 105 to approximately 57. It will not, however, come close to matching the 
@@ -127,7 +127,7 @@ or it may allow an existing product to include additional features prior to or
 after shipment. 
 
 As a final comment. Given the dual port nature of most FPGA block RAMs, or the 
-ease with with a dual-port capability can be incorporated into distributed, 
+ease with which a dual-port capability can be incorporated into distributed, 
 LUT-based RAM, it is possible to incorporate some form of writable control 
 store in virtually any microprogrammed state machine implementation. With some 
 forethought and planning, FPGAs incorporating complex state machines can 
