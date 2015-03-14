@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 //  Copyright 2012 by Michael A. Morris, dba M. A. Morris & Associates
 //
@@ -33,7 +33,7 @@
 //  Michael A. Morris
 //  Huntsville, AL
 //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 1ps
 
@@ -99,6 +99,12 @@
 // Revision:
 //
 //  0.00    12L02   MAM     File Created
+//
+//  0.10    15C14   MAM     Corrected error in the definition of the micropro-
+//                          gram ROM. Initially defined as a wire. Corrected to
+//                          be defined as a reg. Appears to synthesize correctly
+//                          as defined originally, but unable to simulate with
+//                          ISim: terminates with an ACCESS_VIOLATION_EXCEPTION.
 //
 // Additional Comments: 
 //
@@ -207,7 +213,7 @@ reg     WE_TDO, WE_RDO;                     // Write Enable for TDO and RDO
 reg     FS;                                 // FIFO Select: 0 - RF; 1 - TF;
 reg     [3:0] CS;                           // FIFO Controller Current State                           
 
-wire    [13:0] ROM [0:15];                  // FIFO Controller uPgm ROM
+reg     [13:0] ROM [0:15];                  // FIFO Controller uPgm ROM
 wire    [13:0] uPL;                         // FIFO Controller uPgm ROM Output
 
 wire    [3:0] NS;                           // uPgm Next State Field
@@ -371,13 +377,12 @@ always @(posedge Clk)
 begin
     if(WE_FRAM) begin
         FRAM[FRAM_A] <= #1 FRDI;
-        FRDO         <= #1 FRDI;
-    end else 
-        FRDO <= #1 FRAM[FRAM_A];
+    end
+    
+    FRDO <= #1 FRAM[FRAM_A];
 end
 
 // Implement FIFO output registers
-
 
 always @(posedge Clk)
 begin

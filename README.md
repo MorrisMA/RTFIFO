@@ -134,3 +134,15 @@ forethought and planning, FPGAs incorporating complex state machines can
 easily be configured to be in-circuit re-writable. The potential flexibility 
 that a writable microprogram control store provides can not be easily 
 quantified. In other words, it is potentially "priceless".
+
+Corrections
+--------
+
+While building a simulation, found an error in the definition of the ROM that 
+holds the microprogram. In the original release, ROM was defined as a wire. 
+Synthesis of the module did not report any unexpected errors or warnings 
+regardin ROM. However, ISim would terminate with an access violation 
+exception. After a bit of work to isolate the issue, the definition of ROM was 
+changed from a wire to a reg. This change cleared up the ISim access violation 
+exception. Resynthesizing to module yielded the same results. Apparently 
+synthesis is more tolerant than ISim.
