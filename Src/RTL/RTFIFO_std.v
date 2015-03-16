@@ -1,6 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright 2012 by Michael A. Morris, dba M. A. Morris & Associates
+//  Copyright 2012, 2015 by Michael A. Morris, dba M. A. Morris & Associates
 //
 //  All rights reserved. The source code contained herein is publicly released
 //  under the terms and conditions of the GNU Lesser Public License. No part of
@@ -33,7 +33,7 @@
 //  Michael A. Morris
 //  Huntsville, AL
 //
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 1ps
 
@@ -98,6 +98,11 @@
 // Revision:
 //
 //  0.00    12L02   MAM     File Created
+//
+//  0.10    15C15   MAM     Realigned implementation to agree with the micro-
+//                          programmed SM implementation - RTFIFO.v. Corrected
+//                          error in the generation of the FIFO RAMs address.
+//                          Had to add the FS signal as the msb of the address.
 //
 // Additional Comments: 
 //
@@ -183,20 +188,20 @@ localparam pUnused_3       = 4'b1111;
 //  Define FIFO Counter Select Vector positions
 
 localparam pRF_WCnt = 0;
-localparam pRF_RPtr = 1;
-localparam pRF_WPtr = 2;
+localparam pRF_WPtr = 1;
+localparam pRF_RPtr = 2;
 //
 localparam pTF_WCnt = 3;
-localparam pTF_RPtr = 4;
-localparam pTF_WPtr = 5;
+localparam pTF_WPtr = 4;
+localparam pTF_RPtr = 5;
 
 //  Definitions for the FIFO State Machine Control Signals
 
 localparam pNOP        = 0;
 
 localparam pWCnt       = 0;
-localparam pRPtr       = 2;
-localparam pWPtr       = 3;
+localparam pWPtr       = 2;
+localparam pRPtr       = 3;
 
 localparam pClr        = 1;
 localparam pDec        = 2;
@@ -263,7 +268,7 @@ reg     [1:0] SF;                           // Set Flag Field
 
 wire    En, Add, FCR_WE;                    // ALU Select Control Field
 
-wire    WE_FRAM;                            // Memory Select Control Field
+wire    WE_FRAM, RE_FRAM;                   // Memory Select Control Field
 
 wire    Clr_RTF, R_RDTF, WE_TF;             // Clear Command Control Field - TF              
 wire    Clr_RRF, R_RDRF, WE_RF;             // Clear Command Control Field - RF
@@ -383,11 +388,11 @@ always @(*)
 begin
     case(FCR_A)
         3'b000  : CSel <= 6'b000_001;   // Rx FIFO Wordcount Register
-        3'b010  : CSel <= 6'b000_010;   // Rx FIFO Read Pointer Register
-        3'b011  : CSel <= 6'b000_100;   // Rx FIFO Write Pointer Register
+        3'b010  : CSel <= 6'b000_010;   // Rx FIFO Write Pointer Register
+        3'b011  : CSel <= 6'b000_100;   // Rx FIFO Read Pointer Register
         3'b100  : CSel <= 6'b001_000;   // Tx FIFO Wordcount Register
-        3'b110  : CSel <= 6'b010_000;   // Tx FIFO Read Pointer Register
-        3'b111  : CSel <= 6'b100_000;   // Tx FIFO Write Pointer Register
+        3'b110  : CSel <= 6'b010_000;   // Tx FIFO Write Pointer Register
+        3'b111  : CSel <= 6'b100_000;   // Tx FIFO Read Pointer Register
         default : CSel <= 6'b000_000;   // No FIFO Counter Registers Selected
     endcase
 end
@@ -463,12 +468,12 @@ begin
     case(CSel)
         // Rx FIFO
         6'b000_001 : FCRO <= RF_WCnt;
-        6'b000_010 : FCRO <= RF_RPtr;
-        6'b000_100 : FCRO <= RF_WPtr;
+        6'b000_010 : FCRO <= RF_WPtr;
+        6'b000_100 : FCRO <= RF_RPtr;
         // Tx FIFO
         6'b001_000 : FCRO <= TF_WCnt;
-        6'b010_000 : FCRO <= TF_RPtr;
-        6'b100_000 : FCRO <= TF_WPtr;
+        6'b010_000 : FCRO <= TF_WPtr;
+        6'b100_000 : FCRO <= TF_RPtr;
         // No FIFO
         default    : FCRO <= 0;
     endcase
@@ -489,11 +494,11 @@ always @(*)
 begin
     case(FCR_A)
         // Rx FIFO
-        3'b010  : FRAM_A <= RF_RPtr;
-        3'b011  : FRAM_A <= RF_WPtr;
+        3'b010  : FRAM_A <= {FS, RF_WPtr};
+        3'b011  : FRAM_A <= {FS, RF_RPtr};
         // Tx FIFO
-        3'b110  : FRAM_A <= TF_RPtr;
-        3'b111  : FRAM_A <= TF_WPtr;
+        3'b110  : FRAM_A <= {FS, TF_WPtr};
+        3'b111  : FRAM_A <= {FS, TF_RPtr};
         // No FIFO 
         default : FRAM_A <= 0;
     endcase
@@ -512,9 +517,22 @@ always @(posedge Clk)
 begin
     if(WE_FRAM) begin
         FRAM[FRAM_A] <= #1 FRDI;
-        FRDO         <= #1 FRDI;
-    end else 
-        FRDO <= #1 FRAM[FRAM_A];
+     end
+    
+    FRDO <= #1 FRAM[FRAM_A];
+end
+
+// Delay FIFO Read Enables to generate FIFO output register Write Enables
+
+always @(posedge Clk)
+begin
+    if(Rst) begin
+        WE_TDO <= #1 0;
+        WE_RDO <= #1 0;
+    end else begin
+        WE_TDO <= #1 RE_FRAM &  FS;
+        WE_RDO <= #1 RE_FRAM & ~FS;
+    end
 end
 
 // Implement FIFO output registers
@@ -533,19 +551,6 @@ begin
         RDO <= #1 0;
     else if(WE_RDO)
         RDO <= #1 FRDO;
-end
-
-// Delay FIFO Read Enables to generate output register Write Enables
-
-always @(posedge Clk)
-begin
-    if(Rst) begin
-        WE_TDO <= #1 0;
-        WE_RDO <= #1 0;
-    end else begin
-        WE_TDO <= #1 R_RDTF;
-        WE_RDO <= #1 R_RDRF;
-    end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -587,20 +592,20 @@ begin
         // Initialize/Reset FIFO
         4'b0000 : NS <= pReset_1;           // Clear Word Counter
         4'b0001 : NS <= pReset_2;           // Dummy operation
-        4'b0010 : NS <= pReset_3;           // Clear Write Pointer
-        4'b0011 : NS <= Nxt_Evnt;           // Clear Read Pointer, Set EF
+        4'b0010 : NS <= pReset_3;           // Clear Write Pointer, Set EF
+        4'b0011 : NS <= Nxt_Evnt;           // Clear Read Pointer
         // Write FIFO
         4'b0100 : NS <= pWr_1;              // Write FIFO, Inc Wr Pointer
         4'b0101 : NS <= Nxt_Evnt;           // Increment Word Count, Set FF
         // Read FIFO
-        4'b0110 : NS <= pRd_1;              // Read FIFO, Inc Rd Pointer
-        4'b0111 : NS <= Nxt_Evnt;           // Decrement Word Count, Set EF
+        4'b0110 : NS <= pRd_1;              // Decrement Word Count, Set EF
+        4'b0111 : NS <= Nxt_Evnt;           // Read FIFO, Inc Rd Pointer
         // Idle state
         4'b1000 : NS <= Nxt_Evnt;           // Select next event to service
         // Write to FIFO when EF asserted
         4'b1001 : NS <= pWr_EF_1;           // Write FIFO, Inc Wr Pointer
         4'b1010 : NS <= pWr_EF_2;           // Read FIFO, Inc Rd Pointer
-        4'b1011 : NS <= Nxt_Evnt;           // Increment Word Counter, Set EF
+        4'b1011 : NS <= Nxt_Evnt;           // Increment Word Counter, Set FF
         // Unused States
         4'b1100 : NS <= Nxt_Evnt;           // Select next event to service
         4'b1101 : NS <= Nxt_Evnt;           // Select next event to service
@@ -652,15 +657,15 @@ end
 always @(*)
 begin
     case(CS)
-        4'b0011 : NF <= Nxt_FIFO;
-        4'b0101 : NF <= Nxt_FIFO;
-        4'b0111 : NF <= Nxt_FIFO;
-        4'b1000 : NF <= Nxt_FIFO;
-        4'b1011 : NF <= Nxt_FIFO;
-        4'b1100 : NF <= Nxt_FIFO;
-        4'b1101 : NF <= Nxt_FIFO;
-        4'b1110 : NF <= Nxt_FIFO;
-        4'b1111 : NF <= Nxt_FIFO;
+        4'b0011 : NF <= Nxt_FIFO;           // End of FIFO Reset Sequence
+        4'b0101 : NF <= Nxt_FIFO;           // End of FIFO Write Sequence
+        4'b0111 : NF <= Nxt_FIFO;           // End of FIFO Read Sequence
+        4'b1000 : NF <= Nxt_FIFO;           // Idle State
+        4'b1011 : NF <= Nxt_FIFO;           // End of Empty FIFO Write Sequence
+        4'b1100 : NF <= Nxt_FIFO;           // Unused State
+        4'b1101 : NF <= Nxt_FIFO;           // Unused State
+        4'b1110 : NF <= Nxt_FIFO;           // Unused State
+        4'b1111 : NF <= Nxt_FIFO;           // Unused State
         default : NF <= FS;
     endcase
 end
@@ -688,7 +693,7 @@ begin
                 CC <= pNOP;
                 SF <= pNOP;
             end
-        pReset_1  : // 01_01_00_00_00
+        pReset_1  : // 00_00_00_00_00
             begin
                 RS <= pNOP;             // Dummy cycle
                 AS <= pNOP;
@@ -698,7 +703,7 @@ begin
             end
         pReset_2  : // 10_01_00_01_01
             begin
-                RS <= pRPtr;            // Select FIFO Read Pointer
+                RS <= pWPtr;            // Select FIFO Write Pointer
                 AS <= pClr;             // Clear Register
                 MS <= pNOP;         
                 CC <= pClr_xRF;         // Clear FIFO Reset Flag
@@ -706,14 +711,14 @@ begin
             end
         pReset_3  : // 11_01_00_00_00
             begin
-                RS <= pWPtr;            // Select FIFO Write Pointer
+                RS <= pRPtr;            // Select FIFO Read Pointer
                 AS <= pClr;             // Clear Register
                 MS <= pNOP;
                 CC <= pNOP;
                 SF <= pNOP;
             end
         //
-        pWr       : // 11_11_11_11_00
+        pWr       : // 10_11_11_11_00
             begin
                 RS <= pWPtr;            // Select FIFO Write Pointer
                 AS <= pInc;             // Increment Register
@@ -730,21 +735,21 @@ begin
                 SF <= pSet_xFF;         // Update FIFO Flag (Set Full Flag)
             end
         //
-        pRd       : // 10_11_10_10_00
-            begin
-                RS <= pRPtr;            // Select FIFO Read Pointer
-                AS <= pInc;             // Increment Register
-                MS <= pRd_FRAM;         // Read FIFO Block RAM
-                CC <= pClr_RDxF;        // Clear FIFO Read Request Flag
-                SF <= pNOP;
-            end
-        pRd_1     : // 00_10_00_00_10
+        pRd       : // 00_10_00_10_10
             begin
                 RS <= pWCnt;            // Select FIFO Word Counter
                 AS <= pDec;             // Decrement Register
                 MS <= pNOP;
-                CC <= pNOP;
+                CC <= pClr_RDxF;        // Clear FIFO Read Request Flag
                 SF <= pSet_xEF;         // Update FIFO Flag (Set Empty Flag)
+            end
+        pRd_1     : // 11_11_10_00_00
+            begin
+                RS <= pRPtr;            // Select FIFO Read Pointer
+                AS <= pInc;             // Increment Register
+                MS <= pRd_FRAM;         // Read FIFO Block RAM
+                CC <= pNOP;             
+                SF <= pNOP;
             end
         //
         pIdle     : // 00_00_00_00_00
@@ -756,7 +761,7 @@ begin
                 SF <= pNOP;
             end
         //
-        pWr_EF    : // 11_11_11_11_00
+        pWr_EF    : // 10_11_11_11_00
             begin
                 RS <= pWPtr;            // Select Write Pointer
                 AS <= pInc;             // Increment Register
@@ -764,7 +769,7 @@ begin
                 CC <= pWE_xF;           // Clear Write FIFO Request Flag
                 SF <= pNOP;
             end
-        pWr_EF_1  : // 10_11_10_10_00
+        pWr_EF_1  : // 11_11_10_10_00
             begin
                 RS <= pRPtr;            // Select Read Pointer
                 AS <= pInc;             // Increment Register
@@ -784,7 +789,7 @@ begin
         pUnused,
         pUnused_1,
         pUnused_2,
-        pUnused_3 :
+        pUnused_3 : // 00_00_00_00_00
             begin
                 RS <= pNOP;             // Dummy Cycles
                 AS <= pNOP;
@@ -793,7 +798,7 @@ begin
                 SF <= pNOP;
             end
         //
-        default   :
+        default   : // 00_00_00_00_00
             begin
                 RS <= pNOP;             // Default Cycle
                 AS <= pNOP;
@@ -812,17 +817,18 @@ assign FCR_WE = |AS;
 
 //  Decode FRAM Operation Control Field
 
-assign WE_FRAM = &MS;
+assign WE_FRAM = MS[1] &  MS[0];
+assign RE_FRAM = MS[1] & ~MS[0];
 
 //  Decode Clear Command Control Field
 
-assign Clr_RTF =  FS & (CC == 2'b01);   // Clear Reset TF Flag
-assign R_RDTF  =  FS & (CC == 2'b10);   // Generate Delayed CE for TDO
-assign WE_TF   =  FS & (CC == 2'b11);   // Write TF
+assign Clr_RTF   =  FS & (CC == 2'b01); // Clear Reset TF Flag
+assign R_RDTF    =  FS & (CC == 2'b10); // Generate Delayed CE for TDO
+assign WE_TF     =  FS & (CC == 2'b11); // Write TF
 
-assign Clr_RRF = ~FS & (CC == 2'b01);   // Clear Reset RF Flag
-assign R_RDRF  = ~FS & (CC == 2'b10);   // Generate Delayed CE for RDO
-assign WE_RF   = ~FS & (CC == 2'b11);   // Write RF
+assign Clr_RRF   = ~FS & (CC == 2'b01); // Clear Reset RF Flag
+assign R_RDRF    = ~FS & (CC == 2'b10); // Generate Delayed CE for RDO
+assign WE_RF     = ~FS & (CC == 2'b11); // Write RF
 
 //  Decode Set Flags Control Field
 

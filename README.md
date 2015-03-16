@@ -1,7 +1,7 @@
 Microprogrammed Rx/Tx Block RAM FIFO
 =======================
 
-Copyright (C) 2012, Michael A. Morris <morrisma@mchsi.com>.
+Copyright (C) 2012, 2015 Michael A. Morris <morrisma@mchsi.com>.
 All Rights Reserved.
 
 General Description
@@ -138,6 +138,7 @@ quantified. In other words, it is potentially "priceless".
 Corrections
 --------
 
+##1 Update 1 - 14 Mar 2015
 While building a simulation, found an error in the definition of the ROM that 
 holds the microprogram. In the original release, ROM was defined as a wire. 
 Synthesis of the module did not report any unexpected errors or warnings 
@@ -146,3 +147,13 @@ exception. After a bit of work to isolate the issue, the definition of ROM was
 changed from a wire to a reg. This change cleared up the ISim access violation 
 exception. Resynthesizing to module yielded the same results. Apparently 
 synthesis is more tolerant than ISim.
+
+## Update 2 - 15 Mar 2015
+Completed the self-checking testbench. Found two errors in the microprogrammed 
+SM implementation: (1) width of the summer set to match the width of the BRAM 
+address instead of the required width of the FIFO address; (2) used to wrong 
+signal to create the delayed output register write strobe. Also found one 
+error in the standard SM version, after synchronization with the 
+microprogrammed version: the FIFO select signal had been left out of the 
+address for the FIFO RAM. Both versions now pass the testbench, and have a 
+state diagram that matches the original implementations.

@@ -1,6 +1,6 @@
 header
 Project: RTFIFO
-File Revision: 0001
+File Revision: 0002
 Author(s): Michael A. Morris
 Description: RTFIFO Microprogram SM
 endh
@@ -47,6 +47,11 @@ endh
 --------------------------------------------------------------------------------
 --
 --  0001    12L01   mam     Initial development.
+--
+--  0002    15C15   mam     Corrected problem with the order in which the FIFO
+--                          registers were updated. Also, changed the definition
+--                          of the registers to match that used in the reference
+--                          design: 833HAWK/TFRFROM.mif for UART module
 --
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -96,8 +101,8 @@ SF          .def    2       -- Set Flag Select
 
 WCntr       .equ    0       -- RS <= FIFO Word Counter
 Spare       .equ    1       -- RS <= Spare RAM Location
-RPtr        .equ    2       -- RS <= FIFO Read Pointer
-WPtr        .equ    3       -- RS <= FIFO Write Pointer
+WPtr        .equ    2       -- RS <= FIFO Write Pointer
+RPtr        .equ    3       -- RS <= FIFO Read Pointer
 
 --  AS - ALU Operation Select Definitions
 
@@ -132,18 +137,18 @@ _Start: .org    0
 
     Clr_Spr     WCntr, Clr                              -- 0001_00_01_00_00_00
     Clr_RPtr    Spare, Clr                              -- 0010_01_01_00_00_00
-    Clr_WPtr    RPtr,  Clr,   , Clr_xRF  , Init_xFlgs   -- 0011_10_01_00_01_01
-    Idle        WPtr,  Clr                              -- 1000_11_01_00_00_00
+    Clr_WPtr    WPtr,  Clr,   , Clr_xRF  , Init_xFlgs   -- 0011_10_01_00_01_01
+    Idle        RPtr,  Clr                              -- 1000_11_01_00_00_00
 --
 
 _FWr:
-    FWr_1       WPtr,  Inc, Wr, WE_xF                   -- 0101_11_11_11_11_00
+    FWr_1       WPtr,  Inc, Wr, WE_xF                   -- 0101_10_11_11_11_00
     Idle        WCntr, Inc,   ,          , Set_xFF      -- 1000_00_11_00_00_11
 --
 
 _FRd:
-    FRd_1       RPtr,  Inc, Rd, R_RDxF                  -- 0111_10_11_10_10_00
-    Idle        WCntr, Dec,   ,          , Set_xEF      -- 1000_00_10_00_00_10 
+    FRd_1       WCntr, Dec,   , R_RDxF   , Set_xEF      -- 0111_00_10_00_10_10
+    Idle        RPtr,  Inc, Rd,                         -- 1000_11_11_10_00_00 
 --
 
 _Idle:
@@ -152,8 +157,8 @@ _Idle:
 --
 
 _FWr_EF:
-    FWr_EF_1    WPtr,  Inc, Wr, WE_xF                   -- 1010_11_11_11_11_00
-    FWr_EF_2    RPtr,  Inc, Rd, R_RDxF                  -- 1011_10_11_10_10_00
+    FWr_EF_1    WPtr,  Inc, Wr, WE_xF                   -- 1010_10_11_11_11_00
+    FWr_EF_2    RPtr,  Inc, Rd, R_RDxF                  -- 1011_11_11_10_10_00
     Idle        WCntr, Inc,   ,          , Set_xFF      -- 1000_00_11_00_00_11
 
 -- -----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-//  Copyright 2012 by Michael A. Morris, dba M. A. Morris & Associates
+//  Copyright 2012, 2015 by Michael A. Morris, dba M. A. Morris & Associates
 //
 //  All rights reserved. The source code contained herein is publicly released
 //  under the terms and conditions of the GNU Lesser Public License. No part of
@@ -106,6 +106,16 @@
 //                          as defined originally, but unable to simulate with
 //                          ISim: terminates with an ACCESS_VIOLATION_EXCEPTION.
 //
+//  0.20    15C15           Corrected error in the definition of Sum. Incorrect-
+//                          ly defined as having width related to the address
+//                          of the BRAM. It should have defined having a width
+//                          related to the depth of the FIFO. The BRAM address
+//                          has another bit in its definition in order to hold
+//                          both FIFOs in a single BRAM. This error resulted in
+//                          the FF flag not being set as expected. Corrected the
+//                          delayed output register write enable signal to use
+//                          the FIFO RAM Read Enable as designed originally.
+//
 // Additional Comments: 
 //
 //  This implementation is based on the RTFIFO implementation in schematic form
@@ -200,7 +210,7 @@ wire    [2:0] FCR_A;                        // FIFO Control Registers Address
 wire    [(pRTFIFO_Bits - 1):0] FCRI;        // FIFO Control Registers Data In
 wire    [(pRTFIFO_Bits - 1):0] FCRO;        // FIFO Control Registers Data Out
 
-wire    [(pBRAM_AddrWidth -1 ):0] Sum;      // FIFO ALU Sum Output
+wire    [(pRTFIFO_Bits - 1):0] Sum;         // FIFO ALU Sum Output
 wire    Z;                                  // FIFO ALU Output Zero Detector
 
 reg     [7:0] FRAM [0:(pBRAM_Size - 1)];    // FIFO Block RAM (Receive/Transmit)
@@ -225,7 +235,7 @@ wire    [1:0] SF;                           // uPgm Set Flag Field
 
 wire    En, Add, FCR_WE;                    // ALU Select Control Field
 
-wire    WE_FRAM;                            // Memory Select Control Field
+wire    WE_FRAM, RE_FRAM;                   // Memory Select Control Field
 
 wire    Clr_RTF, R_RDTF, WE_TF;             // Clear Command Control Field - TF              
 wire    Clr_RRF, R_RDRF, WE_RF;             // Clear Command Control Field - RF
@@ -382,6 +392,19 @@ begin
     FRDO <= #1 FRAM[FRAM_A];
 end
 
+// Delay FIFO RAM Read Enables to generate output register Write Enables
+
+always @(posedge Clk)
+begin
+    if(Rst) begin
+        WE_TDO  <= #1 0;
+        WE_RDO  <= #1 0;
+    end else begin
+        WE_TDO  <= #1 RE_FRAM &  FS;
+        WE_RDO  <= #1 RE_FRAM & ~FS;
+    end
+end
+
 // Implement FIFO output registers
 
 always @(posedge Clk)
@@ -398,19 +421,6 @@ begin
         RDO <= #1 0;
     else if(WE_RDO)
         RDO <= #1 FRDO;
-end
-
-// Delay FIFO Read Enables to generate output register Write Enables
-
-always @(posedge Clk)
-begin
-    if(Rst) begin
-        WE_TDO <= #1 0;
-        WE_RDO <= #1 0;
-    end else begin
-        WE_TDO <= #1 R_RDTF;
-        WE_RDO <= #1 R_RDRF;
-    end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -441,7 +451,7 @@ begin
               (WR_RF & RF_EF),          // Write Receive FIFO  when  EF
               WR_RF           })        // Write Receive FIFO  when ~EF & ~FF
             //
-            9'b0xx_xx_xx_xx : {FS, CS} <= #1 {  FS, NS    }; // NS from uPgm ROM
+            9'b0xx_xx_xx_xx : {FS, CS} <= #1 {  FS, NS    }; // NS uPgm ROM
             9'b11x_xx_xx_xx : {FS, CS} <= #1 {1'b1, pReset}; // Reset TF
             9'b101_xx_xx_xx : {FS, CS} <= #1 {1'b0, pReset}; // Reset RF
             9'b100_1x_xx_xx : {FS, CS} <= #1 {1'b1, pWr_EF}; // Write Empty TF
@@ -464,7 +474,7 @@ assign uPL = ROM[CS];
 //  Define Microprogram Fields
 
 assign NS = uPL[13:10];     // Next State
-assign RS = uPL[ 9: 8];     // Register Select: 0 - WCntr; 2 - RPtr; 3 - WPtr
+assign RS = uPL[ 9: 8];     // Register Select: 0 - WCntr; 2 - WPtr; 3 - RPtr
 assign AS = uPL[ 7: 6];     // ALU Operation Select: 1 - Clr; 2 - Dec; 3 - Inc
 assign MS = uPL[ 5: 4];     // FRAM Operation: 2 - Read FRAM; 3 - Write FRAM
 assign CC = uPL[ 3: 2];     // Clear Cmd: 1 - Clr_Rst; 2 - Clr_Rd; 3 - Clr_Wr
@@ -478,7 +488,8 @@ assign FCR_WE = |AS;
 
 //  Decode FRAM Operation Control Field
 
-assign WE_FRAM = &MS;
+assign WE_FRAM = MS[1] &  MS[0];
+assign RE_FRAM = MS[1] & ~MS[0];
 
 //  Decode Clear Command Control Field
 
