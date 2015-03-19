@@ -31,9 +31,9 @@ and several memory initialization files:
     RTFIFO.ucf              - User Constraints File: period and pin LOCs
     RTFIFO.tcl              - Project settings file
     
-    tb_RTFIFO.v             - Completed core testbench with test RAM (under development)
+    tb_RTFIFO.v             - Completed core testbench with test RAM
     
-    RTFIFO_uPgm.txt         - Microprogram Source File
+    RTFIFO_uPgm.txt         - Microprogram Source File 
 
 Synthesis
 ---------
@@ -138,7 +138,7 @@ quantified. In other words, it is potentially "priceless".
 Corrections
 --------
 
-##1 Update 1 - 14 Mar 2015
+###Update 1 - 14 Mar 2015
 While building a simulation, found an error in the definition of the ROM that 
 holds the microprogram. In the original release, ROM was defined as a wire. 
 Synthesis of the module did not report any unexpected errors or warnings 
@@ -148,7 +148,7 @@ changed from a wire to a reg. This change cleared up the ISim access violation
 exception. Resynthesizing to module yielded the same results. Apparently 
 synthesis is more tolerant than ISim.
 
-## Update 2 - 15 Mar 2015
+###Update 2 - 15 Mar 2015
 Completed the self-checking testbench. Found two errors in the microprogrammed 
 SM implementation: (1) width of the summer set to match the width of the BRAM 
 address instead of the required width of the FIFO address; (2) used to wrong 
