@@ -111,13 +111,13 @@ is possible to use a LUT-based, distributed RAM to implement the the
 registers. This optimization alone will reduce the number of registers/FFs 
 from 105 to approximately 57. It will not, however, come close to matching the 
 better than 4:1 reduction in registers that the microprogrammed approach 
-provides. Neither will it achieve the better than 2:1 in the number of 
+provides. Neither will it achieve the better than 2:1 reduction in the number of 
 occupied slices that the microprogrammed approach achieves.
 
 The microprogrammed Rx/Tx FIFO provided in this repo is a design approach that 
 should be carefully considered when using RAM-based FPGAs. In many 
 situtations, a standard, RTL-based approach fails to take full advantage of the 
-features of RAM-based FPGAs, and will result in inefficient use of the FPGA. 
+features of RAM-based FPGAs, and will result in an inefficient use of the FPGA. 
 Given the cost of implementing any design in an FPGA and the cost of the 
 device itself, designers should seek to maximize the amount of circuitry/logic 
 that can be incorporated into an FPGA. In many cases, a microprogrammed 
@@ -126,7 +126,7 @@ alone may be sufficient to reduce the size of the device shipped in a product,
 or it may allow an existing product to include additional features prior to or 
 after shipment. 
 
-As a final comment. Given the dual port nature of most FPGA block RAMs, or the 
+As a final comment. Given the dual-port nature of most FPGA block RAMs, or the 
 ease with which a dual-port capability can be incorporated into distributed, 
 LUT-based RAM, it is possible to incorporate some form of writable control 
 store in virtually any microprogrammed state machine implementation. With some 
@@ -138,20 +138,20 @@ quantified. In other words, it is potentially "priceless".
 Corrections
 --------
 
-###Update 1 - 14 Mar 2015
+### Update 1 - 14 Mar 2015
 While building a simulation, found an error in the definition of the ROM that 
 holds the microprogram. In the original release, ROM was defined as a wire. 
 Synthesis of the module did not report any unexpected errors or warnings 
-regardin ROM. However, ISim would terminate with an access violation 
+regarding ROM. However, ISim would terminate with an access violation 
 exception. After a bit of work to isolate the issue, the definition of ROM was 
 changed from a wire to a reg. This change cleared up the ISim access violation 
 exception. Resynthesizing to module yielded the same results. Apparently 
 synthesis is more tolerant than ISim.
 
-###Update 2 - 15 Mar 2015
+### Update 2 - 15 Mar 2015
 Completed the self-checking testbench. Found two errors in the microprogrammed 
 SM implementation: (1) width of the summer set to match the width of the BRAM 
-address instead of the required width of the FIFO address; (2) used to wrong 
+address instead of the required width of the FIFO address; (2) used the wrong 
 signal to create the delayed output register write strobe. Also found one 
 error in the standard SM version, after synchronization with the 
 microprogrammed version: the FIFO select signal had been left out of the 
